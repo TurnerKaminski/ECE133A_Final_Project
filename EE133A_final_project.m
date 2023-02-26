@@ -76,8 +76,11 @@ scatter(log(means{:,:}), stds{:,:})
 %}
 %% part 2
 %create an unlabeled matrix to perform standardization
+%find mean and std of each feature
 X_matrix = superconductor_data{:,:};
 X_standardized = normalize(X_matrix);
+mean_features = varfun(@mean, superconductor_data, 'InputVariables', @isnumeric);
+std_features = varfun(@std, superconductor_data, 'InputVariables', @isnumeric);
 
 %perform k-means clustering
 
