@@ -8,6 +8,8 @@ element_data = readtable("unique_m.csv");
 %that are in the element_data
 superconductor_data = readtable("train.csv");
 
+%comment out for speed when doing other parts of project
+%{
 %%Just looking at some basic plots and info from our tables, to grasp info
 %Histogram of the critical temps from first table
 histogram(element_data.("critical_temp")(1:21263))
@@ -71,3 +73,24 @@ figure()
 scatter(means{:,:}, stds{:,:});
 figure()
 scatter(log(means{:,:}), stds{:,:})
+%}
+%% part 2
+%create an unlabeled matrix to perform standardization
+X_matrix = superconductor_data{:,:};
+X_standardized = normalize(X_matrix);
+
+%perform k-means clustering
+
+%perform SVD, S is a 82x1 array of the SVD values in descending order
+S = svd(X_standardized);
+
+%find the correlation matrix of the standardized data
+%Create a table to see which features best correlate to critical temp
+cor_matrix = corr(X_standardized);
+cor_to_crit_temp = cor_matrix(:,82);
+best_cor = abs(cor_to_crit_temp);
+best_cor = array2table(transpose(best_cor));
+best_cor.Properties.VariableNames = superconductor_data.Properties.VariableNames;
+[~, idx] = sort(best_cor{:,:}, 'descend');
+best_cor_desc = best_cor(:,idx);
+heatmap(cor_matrix)
