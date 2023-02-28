@@ -87,7 +87,7 @@ std_features = varfun(@std, superconductor_data, 'InputVariables', @isnumeric);
 k_values = 1:10;
 sse = zeros(size(k_values));
 for i = 1:length(k_values)
-    [~, centroids, sumd] = kmeans(superconductor_data{:,1:81}, k_values(i));
+    [~, centroids, sumd] = kmeans(X_standardized(:,1:81), k_values(i));
     sse(i) = sum(sumd);
 end
 %plot the elbow curve of the results to determine optimum k
