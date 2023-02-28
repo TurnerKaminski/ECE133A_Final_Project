@@ -83,20 +83,22 @@ mean_features = varfun(@mean, superconductor_data, 'InputVariables', @isnumeric)
 std_features = varfun(@std, superconductor_data, 'InputVariables', @isnumeric);
 
 %perform k-means clustering
-%perform k-means for values of k 1-10
-k_values = 1:10;
-sse = zeros(size(k_values));
-for i = 1:length(k_values)
-    [~, centroids, sumd] = kmeans(X_standardized(:,1:81), k_values(i));
-    sse(i) = sum(sumd);
+for t = 1:10
+k = t;
+% Perform k-means clustering on the features
+[idx, centroids] = kmeans(X_standardized(:,1:81), k);
+crit_temps = X_matrix(:, end);
+% Compute the predicted critical temperatures
+pred_crit_temps = zeros(size(crit_temps));
+for i = 1:k
+    cluster_samples = find(idx == i);
+    pred_crit_temps(cluster_samples) = mean(crit_temps(cluster_samples));
 end
-%plot the elbow curve of the results to determine optimum k
-figure();
-plot(k_values, sse, 'bx-');
-xlabel('Number of clusters');
-ylabel('Sum of squared distances');
-title('Elbow Curve');
-
+% Calculate the RMSE between the actual and predicted critical temperatures
+rmse = sqrt(mean((crit_temps - pred_crit_temps).^2));
+% Print the RMSE
+fprintf('RMSE = %f\n', rmse);
+end
 %perform SVD, S is a 82x1 array of the SVD values in descending order
 S = svd(X_standardized);
 %find the correlation matrix of the standardized data
