@@ -96,11 +96,6 @@ plot(k_values, sse, 'bx-');
 xlabel('Number of clusters');
 ylabel('Sum of squared distances');
 title('Elbow Curve');
-%determine k mathematically by calculating where the elbow curve slope
-%flattens out
-diff_sse = diff(sse);
-[~, optimal_k] = max(diff_sse);
-optimal_k = optimal_k + 1;
 
 %perform SVD, S is a 82x1 array of the SVD values in descending order
 S = svd(X_standardized);
