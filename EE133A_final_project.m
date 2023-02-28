@@ -83,10 +83,27 @@ mean_features = varfun(@mean, superconductor_data, 'InputVariables', @isnumeric)
 std_features = varfun(@std, superconductor_data, 'InputVariables', @isnumeric);
 
 %perform k-means clustering
+%perform k-means for values of k 1-10
+k_values = 1:10;
+sse = zeros(size(k_values));
+for i = 1:length(k_values)
+    [~, centroids, sumd] = kmeans(superconductor_data{:,1:81}, k_values(i));
+    sse(i) = sum(sumd);
+end
+%plot the elbow curve of the results to determine optimum k
+figure();
+plot(k_values, sse, 'bx-');
+xlabel('Number of clusters');
+ylabel('Sum of squared distances');
+title('Elbow Method for Optimal k');
+%determine k mathematically by calculating where the elbow curve slope
+%flattens out
+diff_sse = diff(sse);
+[~, optimal_k] = max(diff_sse);
+optimal_k = optimal_k + 1;
 
 %perform SVD, S is a 82x1 array of the SVD values in descending order
 S = svd(X_standardized);
-
 %find the correlation matrix of the standardized data
 %Create a table to see which features best correlate to critical temp
 cor_matrix = corr(X_standardized);
@@ -96,4 +113,5 @@ best_cor = array2table(transpose(best_cor));
 best_cor.Properties.VariableNames = superconductor_data.Properties.VariableNames;
 [~, idx] = sort(best_cor{:,:}, 'descend');
 best_cor_desc = best_cor(:,idx);
+figure()
 heatmap(cor_matrix)
