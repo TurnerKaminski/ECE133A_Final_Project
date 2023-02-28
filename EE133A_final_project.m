@@ -95,7 +95,7 @@ figure();
 plot(k_values, sse, 'bx-');
 xlabel('Number of clusters');
 ylabel('Sum of squared distances');
-title('Elbow Method for Optimal k');
+title('Elbow Curve');
 %determine k mathematically by calculating where the elbow curve slope
 %flattens out
 diff_sse = diff(sse);
