@@ -118,7 +118,7 @@ target = X_standardized(:,82);
 %partition data into folds without target column
 f = 10;
 cv = cvpartition(size(X_no_target,1), 'KFold', f);
-%define linear regression model
+%define linear regression model, i guess i redefine for test sets so this doesnt need to exist but eh whatever
 lm = fitlm(X_no_target, target, 'Intercept', true);
 %test the model on the k folds, store rms error
 rms_error = zeros(f,1);
