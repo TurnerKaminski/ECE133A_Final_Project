@@ -96,8 +96,6 @@ for i = 1:k
 end
 % Calculate the RMSE between the actual and predicted critical temperatures
 rmse = sqrt(mean((crit_temps - pred_crit_temps).^2));
-% Print the RMSE
-fprintf('RMSE = %f\n', rmse);
 end
 %perform SVD, S is a 82x1 array of the SVD values in descending order
 S = svd(X_standardized);
@@ -112,3 +110,32 @@ best_cor.Properties.VariableNames = superconductor_data.Properties.VariableNames
 best_cor_desc = best_cor(:,idx);
 figure()
 heatmap(cor_matrix)
+
+%% Part 3
+%3a
+X_no_target = X_standardized(:,1:81);
+target = X_standardized(:,82);
+%partition data into folds without target column
+f = 10;
+cv = cvpartition(size(X_no_target,1), 'KFold', f);
+%define linear regression model
+lm = fitlm(X_no_target, target, 'Intercept', true);
+%test the model on the k folds, store rms error
+rms_error = zeros(f,1);
+model_params = cell(f,1);
+for k = 1:f
+    trainIdx = cv.training(k); % indices for training set
+    testIdx = cv.test(k); % indices for test set
+    X_train = X_no_target(trainIdx,:);
+    y_train = target(trainIdx,:);
+    X_test = X_no_target(testIdx,:);
+    y_test = target(testIdx,:);
+    %fit linear model on training set
+    lm_k = fitlm(X_train, y_train, 'Intercept', true);
+    %evaluate on test set
+    y_pred = predict(lm_k, X_test);
+    %calculate RMS error
+    rms_error(k) = sqrt(mean((y_test - y_pred).^2));
+    %store model parameters
+    model_params{k} = lm_k.Coefficients;
+end
