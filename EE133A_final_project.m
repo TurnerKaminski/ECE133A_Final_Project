@@ -118,7 +118,7 @@ target = X_standardized(:,82);
 %partition data into folds without target column
 f = 10;
 cv = cvpartition(size(X_no_target,1), 'KFold', f);
-%define linear regression model, i guess i redefine for test sets so this doesnt need to exist but eh whatever
+%define linear regression model
 lm = fitlm(X_no_target, target, 'Intercept', true);
 %test the model on the k folds, store rms error
 rms_error = zeros(f,1);
@@ -139,3 +139,76 @@ for k = 1:f
     %store model parameters
     model_params{k} = lm_k.Coefficients;
 end
+%3b
+%K-means wasn't good for our data so a stratified model doesn't make sense
+%Since we have so many features, lets try removing some of the less
+%important ones
+%I choose which features to remove based on their correlation to the
+%critical temperature
+%Lets try removing 10 to start
+reduced_table = superconductor_data;
+reduced_table = removevars(reduced_table, ["gmean_fie", "entropy_ThermalConductivity", ...
+    "mean_fie", "mean_atomic_radius", "wtd_gmean_ElectronAffinity", "wtd_mean_ElectronAffinity", ...
+    "mean_atomic_mass", "std_Density", "wtd_entropy_ThermalConductivity", "range_FusionHeat"]);
+reduced_matrix = reduced_table{:,:};
+reduced_standardized = normalize(reduced_matrix);
+reduced_no_target = reduced_standardized(:,1:71);
+%lets perform linear regression on reduced data to see if it performs
+%better
+f = 10;
+cv = cvpartition(size(reduced_no_target,1), 'KFold', f);
+%test the model on the k folds, store rms error
+rms_error_red = zeros(f,1);
+model_params_red = cell(f,1);
+for k = 1:f
+    trainIdx = cv.training(k); % indices for training set
+    testIdx = cv.test(k); % indices for test set
+    X_train = reduced_no_target(trainIdx,:);
+    y_train = target(trainIdx,:);
+    X_test = reduced_no_target(testIdx,:);
+    y_test = target(testIdx,:);
+    %fit linear model on training set
+    lm_k_red = fitlm(X_train, y_train, 'Intercept', true);
+    %evaluate on test set
+    y_pred_red = predict(lm_k_red, X_test);
+    %calculate RMS error
+    rms_error_red(k) = sqrt(mean((y_test - y_pred_red).^2));
+    %store model parameters
+    model_params_red{k} = lm_k_red.Coefficients;
+end
+%it performed worse!
+%Lets try adding a few features instead
+%make a new table with no target feature
+new_features_table = removevars(superconductor_data,"critical_temp");
+%add the log of mean density
+%need to shift so log doesnt end up complex
+X_shift_mean_density = X_standardized(:,32) - min(X_standardized(:,32)) + 1;
+new_features_table.log_mean_density = log(X_shift_mean_density);
+%make table into a matrix
+new_features_matrix = new_features_table{:,:};
+%test the data with extra features
+f = 10;
+cv = cvpartition(size(new_features_matrix,1), 'KFold', f);
+%test the model on the k folds, store rms error
+rms_error_new = zeros(f,1);
+model_params_new = cell(f,1);
+for k = 1:f
+    trainIdx = cv.training(k); % indices for training set
+    testIdx = cv.test(k); % indices for test set
+    X_train = new_features_matrix(trainIdx,:);
+    y_train = target(trainIdx,:);
+    X_test = new_features_matrix(testIdx,:);
+    y_test = target(testIdx,:);
+    %fit linear model on training set
+    lm_k_new = fitlm(X_train, y_train, 'Intercept', true);
+    %evaluate on test set
+    y_pred_new = predict(lm_k_new, X_test);
+    %calculate RMS error
+    rms_error_new(k) = sqrt(mean((y_test - y_pred_new).^2));
+    %store model parameters
+    model_params_new{k} = lm_k_new.Coefficients;
+end
+
+fprintf('mean for normal lm: %f \n', mean(rms_error))
+fprintf('mean for less features lm: %f \n', mean(rms_error_red))
+fprintf('mean for extra features lm: %f', mean(rms_error_new))
