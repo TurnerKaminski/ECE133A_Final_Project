@@ -81,7 +81,6 @@ X_matrix = superconductor_data{:,:};
 X_standardized = normalize(X_matrix);
 mean_features = varfun(@mean, superconductor_data, 'InputVariables', @isnumeric);
 std_features = varfun(@std, superconductor_data, 'InputVariables', @isnumeric);
-
 %perform k-means clustering
 for t = 1:10
 k = t;
@@ -180,12 +179,41 @@ end
 %Lets try adding a few features instead
 %make a new table with no target feature
 new_features_table = removevars(superconductor_data,"critical_temp");
-%add the log of mean density
 %need to shift so log doesnt end up complex
-X_shift_mean_density = X_standardized(:,32) - min(X_standardized(:,32)) + 1;
-new_features_table.log_mean_density = log(X_shift_mean_density);
+%check which correlations improve when log10()ed
+newcorr = zeros(81,1);
+for i = 1:81
+    X_shift = X_standardized(:,i) - min(X_standardized(:,i)) + 1;
+    newcorr(i) = corr(log10(X_shift),target);
+end
+newcorr = newcorr';
+best_cormatrix = best_cor{:,:};
+%add a new feature for each feature that improved when log10()ed
+for i = 1:81
+    if (abs(newcorr(1,i)) > best_cormatrix(1,i))
+
+        X_shift = X_standardized(:,i) - min(X_standardized(:,i)) + 1;
+        new_features_table.(num2str(i)) = log10(X_shift);
+    end
+end
+%check square
+newcorr = zeros(81,1);
+for i = 1:81
+    X_shift = X_standardized(:,i);
+    newcorr(i) = corr((X_shift).^2,target);
+end
+newcorr = newcorr';
+best_cormatrix = best_cor{:,:};
+%add a new feature for each feature that improved when squared
+for i = 1:81
+    if (abs(newcorr(1,i)) > best_cormatrix(1,i))
+        X_shift = X_standardized(:,i);
+        new_features_table.(num2str(i*10)) = (X_shift).^2;
+    end
+end
 %make table into a matrix
 new_features_matrix = new_features_table{:,:};
+%check corr
 %test the data with extra features
 f = 10;
 cv = cvpartition(size(new_features_matrix,1), 'KFold', f);
