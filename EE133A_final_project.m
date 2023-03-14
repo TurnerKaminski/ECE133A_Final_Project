@@ -138,6 +138,7 @@ for k = 1:f
     %store model parameters
     model_params{k} = lm_k.Coefficients;
 end
+
 %3b
 %K-means wasn't good for our data so a stratified model doesn't make sense
 %Since we have so many features, lets try removing some of the less
@@ -213,6 +214,7 @@ for i = 1:81
 end
 %make table into a matrix
 new_features_matrix = new_features_table{:,:};
+new_features_matrix = normalize(new_features_matrix);
 %check corr
 %test the data with extra features
 f = 10;
@@ -239,4 +241,135 @@ end
 
 fprintf('mean for normal lm: %f \n', mean(rms_error))
 fprintf('mean for less features lm: %f \n', mean(rms_error_red))
-fprintf('mean for extra features lm: %f', mean(rms_error_new))
+fprintf('mean for extra features lm: %f \n', mean(rms_error_new))
+
+%3c
+%find best lambda
+% Split data into training and test sets
+cv = cvpartition(size(new_features_matrix,1),'HoldOut',0.2);
+idxTrain = training(cv);
+Xtrain = new_features_matrix(idxTrain,:);
+ytrain = target(idxTrain,:);
+Xtest = new_features_matrix(~idxTrain,:);
+ytest = target(~idxTrain,:);
+% Define a range of lambda values to test
+lambda_vals = logspace(-2, 5, 100);
+% Initialize arrays to store RMS values for each lambda value
+rms_train = zeros(length(lambda_vals),1);
+rms_test = zeros(length(lambda_vals),1);
+coeffs = zeros(length(lambda_vals), size(Xtrain,2));
+% Loop over lambda values and fit regularized models
+for i = 1:length(lambda_vals)
+    lambda = lambda_vals(i);
+    r_mdl = fitrlinear(Xtrain, ytrain, 'Regularization', 'ridge', 'Lambda', lambda);
+    % Evaluate RMS on training and test sets
+    yhat_train = predict(r_mdl, Xtrain);
+    rms_train(i) = sqrt(mean((ytrain - yhat_train).^2));
+    yhat_test = predict(r_mdl, Xtest);
+    rms_test(i) = sqrt(mean((ytest - yhat_test).^2));
+    coeffs(i,:) = r_mdl.Beta;
+end
+r_mdl = fitrlinear(Xtrain, ytrain, 'Regularization', 'ridge', 'Lambda', .1150);
+% Extract the RMSE for the desired lambda value
+rmse_for_lambda = rms_test(16);
+fprintf('rms for regularized model: %f \n', rmse_for_lambda)
+% Plot RMS vs lambda
+figure()
+semilogx(lambda_vals, rms_train, 'b-', 'DisplayName', 'Train');
+hold on;
+semilogx(lambda_vals, rms_test, 'r-', 'DisplayName', 'Test');
+xlabel('\lambda');
+ylabel('RMS');
+legend();
+title('\lambda vs RMS for initial regularized model')
+% Plot regularization path
+figure()
+semilogx(lambda_vals, coeffs, '-');
+xlabel('\lambda');
+ylabel('Coefficient value');
+title('Regularization path');
+% Plot linear model fit on training and test data
+figure()
+scatter(Xtrain, ytrain, 'b', 'filled', 'DisplayName', '');
+hold on;
+scatter(Xtest, ytest, 'r', 'filled', 'DisplayName', '');
+xvals = linspace(min(new_features_matrix(:)), max(new_features_matrix(:)), 100)';
+xvals = repmat(xvals, 1, size(new_features_matrix, 2));
+yvals_train = predict(r_mdl, xvals);
+plot(xvals, yvals_train, 'k-', 'LineWidth', 2, 'DisplayName', 'Linear model fit');
+xlabel('Feature value');
+ylabel('Target value');
+legend('Training data', 'Testing data', 'Linear model fit');
+title('Linear model fit on training and testing data');
+
+%we are dealing with underfitting for regularized linear model,
+%so going to add randomly generated features
+%as per Prof suggestion and lec 9 notes
+% Define the size of matrix B and vector v
+k = 81; % The number of additional features you want to create
+B = randn(126, k); % A random matrix of size [m, k]
+v = randn(1, k); % A random vector of size [1, k]
+
+% Define the transformation function
+%only want positive values
+f = @(x) max(0, x.*B + v);
+
+% Alternatively, you can use the following loop to apply the transformation row by row
+X_new = zeros(size(new_features_matrix,1), size(B,2));
+for i = 1:size(new_features_matrix,1)
+    X_new(i,:) = max(0, new_features_matrix(i,:)*B + v);
+end
+%add onto data set
+new_features_matrix = horzcat(new_features_matrix, X_new);
+new_features_matrix = normalize(new_features_matrix);
+%test the performance of the new dataset
+cv = cvpartition(size(new_features_matrix,1),'HoldOut',0.2);
+idxTrain = training(cv);
+Xtrain = new_features_matrix(idxTrain,:);
+ytrain = target(idxTrain,:);
+Xtest = new_features_matrix(~idxTrain,:);
+ytest = target(~idxTrain,:);
+% Define a range of lambda values to test
+lambda_vals = logspace(-2, 5, 100);
+% Initialize arrays to store RMS values for each lambda value
+rms_train_rand = zeros(length(lambda_vals),1);
+rms_test_rand = zeros(length(lambda_vals),1);
+coeffs_rand = zeros(length(lambda_vals), size(Xtrain,2));
+% Loop over lambda values and fit regularized models
+for i = 1:length(lambda_vals)
+    lambda = lambda_vals(i);
+    r_mdl = fitrlinear(Xtrain, ytrain, 'Regularization', 'ridge', 'Lambda', lambda);
+    % Evaluate RMS on training and test sets
+    yhat_train = predict(r_mdl, Xtrain);
+    rms_train_rand(i) = sqrt(mean((ytrain - yhat_train).^2));
+    yhat_test = predict(r_mdl, Xtest);
+    rms_test_rand(i) = sqrt(mean((ytest - yhat_test).^2));
+    coeffs_rand(i,:) = r_mdl.Beta;
+end
+% Plot RMS vs lambda
+figure()
+semilogx(lambda_vals, rms_train_rand, 'b-', 'DisplayName', 'Train');
+hold on;
+semilogx(lambda_vals, rms_test_rand, 'r-', 'DisplayName', 'Test');
+xlabel('\lambda');
+ylabel('RMS');
+legend();
+title('\lambda vs RMS for supplemented data regularized model')
+%define model for the best lambda, this will be used to plot
+rand_mdl = fitrlinear(Xtrain, ytrain, 'Regularization', 'ridge', 'Lambda', .0138);
+% Extract the RMSE for the desired lambda value
+rmse_for_lambda_rand = rms_test_rand(3);
+fprintf('rms for regularized model: %f \n', rmse_for_lambda_rand)
+%plot this stupid ass model
+figure()
+scatter(Xtrain, ytrain, 'b', 'filled', 'DisplayName', '');
+hold on;
+scatter(Xtest, ytest, 'r', 'filled', 'DisplayName', '');
+xvals = linspace(min(new_features_matrix(:)), max(new_features_matrix(:)), 100)';
+xvals = repmat(xvals, 1, size(new_features_matrix, 2));
+yvals_train = predict(rand_mdl, xvals);
+plot(xvals, yvals_train, 'k-', 'LineWidth', 2, 'DisplayName', 'Linear model fit');
+xlabel('Feature value');
+ylabel('Target value');
+legend('Training data', 'Testing data', 'Linear model fit');
+title('Linear model fit on training and testing data');
