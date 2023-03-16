@@ -111,7 +111,10 @@ figure()
 heatmap(cor_matrix)
 
 %% Part 3
+
 %3a
+%create a normal linear regression model, using cross validation
+%store error and model pareameters
 X_no_target = X_standardized(:,1:81);
 target = X_standardized(:,82);
 %partition data into folds without target column
@@ -139,7 +142,10 @@ for k = 1:f
     model_params{k} = lm_k.Coefficients;
 end
 
+
+
 %3b
+
 %K-means wasn't good for our data so a stratified model doesn't make sense
 %Since we have so many features, lets try removing some of the less
 %important ones
@@ -243,8 +249,9 @@ fprintf('mean for normal lm: %f \n', mean(rms_error))
 fprintf('mean for less features lm: %f \n', mean(rms_error_red))
 fprintf('mean for extra features lm: %f \n', mean(rms_error_new))
 
-%3c
-%find best lambda
+% part 3.c.1
+
+% Perform regularization on the model from 3b
 % Split data into training and test sets
 cv = cvpartition(size(new_features_matrix,1),'HoldOut',0.2);
 idxTrain = training(cv);
@@ -302,8 +309,12 @@ ylabel('Target value');
 legend('Training data', 'Testing data', 'Linear model fit');
 title('Linear model fit on training and testing data');
 
+
+%for part 3.c.2
+
+%revise feature engineering to create a new regularized model
 %we are dealing with underfitting for regularized linear model,
-%so going to add randomly generated features
+%so going to add randomly generated features to add regression power
 %as per Prof suggestion and lec 9 notes
 % Define the size of matrix B and vector v
 k = 1000; % The number of additional features you want to create
@@ -311,18 +322,17 @@ B = randn(126, k); % A random matrix of size [m, k]
 v = randn(1, k); % A random vector of size [1, k]
 
 % Define the transformation function
-%only want positive values
+%only want positive values so use max func
 f = @(x) max(0, x.*B + v);
 
-% Alternatively, you can use the following loop to apply the transformation row by row
 X_new = zeros(size(new_features_matrix,1), size(B,2));
 for i = 1:size(new_features_matrix,1)
     X_new(i,:) = max(0, new_features_matrix(i,:)*B + v);
 end
-%add onto data set
+%add onto data set and normalize
 new_features_matrix = horzcat(new_features_matrix, X_new);
 new_features_matrix = normalize(new_features_matrix);
-%test the performance of the new dataset
+%split into test and training sets
 cv = cvpartition(size(new_features_matrix,1),'HoldOut',0.2);
 idxTrain = training(cv);
 Xtrain = new_features_matrix(idxTrain,:);
@@ -346,7 +356,7 @@ for i = 1:length(lambda_vals)
     rms_test_rand(i) = sqrt(mean((ytest - yhat_test).^2));
     coeffs_rand(i,:) = r_mdl.Beta;
 end
-% Plot RMS vs lambda
+% Plot RMS vs lambda for revised regularized model
 figure()
 semilogx(lambda_vals, rms_train_rand, 'b-', 'DisplayName', 'Train');
 hold on;
