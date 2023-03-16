@@ -306,7 +306,7 @@ title('Linear model fit on training and testing data');
 %so going to add randomly generated features
 %as per Prof suggestion and lec 9 notes
 % Define the size of matrix B and vector v
-k = 81; % The number of additional features you want to create
+k = 1000; % The number of additional features you want to create
 B = randn(126, k); % A random matrix of size [m, k]
 v = randn(1, k); % A random vector of size [1, k]
 
@@ -356,7 +356,7 @@ ylabel('RMS');
 legend();
 title('\lambda vs RMS for supplemented data regularized model')
 %define model for the best lambda, this will be used to plot
-rand_mdl = fitrlinear(Xtrain, ytrain, 'Regularization', 'ridge', 'Lambda', .0138);
+rand_mdl = fitrlinear(Xtrain, ytrain, 'Regularization', 'ridge', 'Lambda', .1150);
 % Extract the RMSE for the desired lambda value
 rmse_for_lambda_rand = rms_test_rand(3);
 fprintf('rms for regularized model: %f \n', rmse_for_lambda_rand)
