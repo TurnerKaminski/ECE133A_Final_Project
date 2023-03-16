@@ -183,11 +183,14 @@ for k = 1:f
     model_params_red{k} = lm_k_red.Coefficients;
 end
 %it performed worse!
+
+
 %Lets try adding a few features instead
 %make a new table with no target feature
 new_features_table = removevars(superconductor_data,"critical_temp");
+
 %need to shift so log doesnt end up complex
-%check which correlations improve when log10()ed
+%store correlations for newly logged features
 newcorr = zeros(81,1);
 for i = 1:81
     X_shift = X_standardized(:,i) - min(X_standardized(:,i)) + 1;
@@ -195,7 +198,8 @@ for i = 1:81
 end
 newcorr = newcorr';
 best_cormatrix = best_cor{:,:};
-%add a new feature for each feature that improved when log10()ed
+%check corr of new feature vs corr of original feature
+%add the new feature for each one that improved
 for i = 1:81
     if (abs(newcorr(1,i)) > best_cormatrix(1,i))
 
@@ -203,7 +207,8 @@ for i = 1:81
         new_features_table.(num2str(i)) = log10(X_shift);
     end
 end
-%check square
+
+%perform and store corr of squared original features
 newcorr = zeros(81,1);
 for i = 1:81
     X_shift = X_standardized(:,i);
@@ -211,18 +216,19 @@ for i = 1:81
 end
 newcorr = newcorr';
 best_cormatrix = best_cor{:,:};
-%add a new feature for each feature that improved when squared
+%check corr of new squared feature vs corr of original feature
+%add the new feature for each one that improved
 for i = 1:81
     if (abs(newcorr(1,i)) > best_cormatrix(1,i))
         X_shift = X_standardized(:,i);
         new_features_table.(num2str(i*10)) = (X_shift).^2;
     end
 end
-%make table into a matrix
+%make table into a matrix and normalize
 new_features_matrix = new_features_table{:,:};
 new_features_matrix = normalize(new_features_matrix);
-%check corr
-%test the data with extra features
+
+%perform cross validation and test the model with newly added features
 f = 10;
 cv = cvpartition(size(new_features_matrix,1), 'KFold', f);
 %test the model on the k folds, store rms error
@@ -244,10 +250,13 @@ for k = 1:f
     %store model parameters
     model_params_new{k} = lm_k_new.Coefficients;
 end
+%print performances of models from part 3a & 3b
+fprintf('3a mean for normal lm: %f \n', mean(rms_error))
+fprintf('3b mean for less features lm: %f \n', mean(rms_error_red))
+fprintf('3b mean for extra features lm: %f \n', mean(rms_error_new))
 
-fprintf('mean for normal lm: %f \n', mean(rms_error))
-fprintf('mean for less features lm: %f \n', mean(rms_error_red))
-fprintf('mean for extra features lm: %f \n', mean(rms_error_new))
+
+% part 3c
 
 % part 3.c.1
 
