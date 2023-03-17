@@ -469,7 +469,7 @@ disp(rms_error);
 
 % Non-linear prediction function for part 3d
 % Minimize (fun(x, xdata(i)) - y(i))^2
-% x is parameter vector, xdata(i) is feature vector for each data point i
+% x is parameter vec
 function F = fun(x, xdata)
     F = zeros(size(xdata, 1), 1);
     for i = 1:size(xdata, 1)
