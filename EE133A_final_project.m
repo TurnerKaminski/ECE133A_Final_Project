@@ -125,6 +125,8 @@ heatmap(cor_matrix)
 
 % Create a normal linear regression model, using cross validation
 % Store error and model pareameters
+X_matrix = superconductor_data{:,:};
+X_standardized = normalize(X_matrix);
 X_no_target = X_standardized(:,1:81);
 target = X_standardized(:,82);
 
@@ -431,9 +433,11 @@ cv = cvpartition(size(X_no_target,1), 'KFold', folds);
 rms_error = zeros(folds,1);
 model_params = cell(folds,1);
 
-% Remember to set this!! # of parameters you want
-num_params = 81;
+% Remember to set this!! # of parameters you want to use
+% Make sure to set the correct value or else it will complain (too small)
+num_params = 5;
 
+% Warning: Takes very long time
 for k = 1:folds
 
     % Set up training and testing set for each fold
@@ -444,15 +448,17 @@ for k = 1:folds
     X_test = X_no_target(testIdx,:);
     y_test = target(testIdx,:);
 
-    % Random initial value for parameters, can also replace rand
-    % with ones for consistency
-    x0 = rand(1, num_params);
+    % Initial values for parameters, I just use ones for consistency
+    x0 = ones(1, num_params);
 
-    % Optional options to use levenberg
-    %options = optimoptions('lsqcurvefit','Algorithm','levenberg-marquardt');
+    % Optional options to use levenberg-marquardt taught in class
+    options = optimoptions('lsqcurvefit','Algorithm','levenberg-marquardt');
+    lb = [];
+    ub = [];
 
     % Non-linear fitting algorithm
-    parameters = lsqcurvefit(@fun, x0, X_train, y_train);
+    %parameters = lsqcurvefit(@fun, x0, X_train, y_train);
+    parameters = lsqcurvefit(@fun, x0, X_train, y_train, lb, ub, options);
     
     % Predicted y value
     y_pred = fun(parameters, X_test);
@@ -473,19 +479,32 @@ disp(rms_error);
 function F = fun(x, xdata)
     F = zeros(size(xdata, 1), 1);
     for i = 1:size(xdata, 1)
-        for j = 1:size(xdata(i,:))
-            F(i, 1) = F(i, 1) + xdata(i,j)*x(j);
-        end
-        F(i, 1) = F(i, 1)^2;
+        F(i, 1) = norm(x(1).*exp(sin(x(2).*xdata(i,:)))./x(3).*xdata(i,:).^x(4))/x(5);
     end
 end
+
 
 % A collection of non-linear functions I've tried for part 3d. Just
 % copy and paste in the one you want I guess
 
 %{
 
-% Random function I came up with. RMS ~ 1, VERY VERY slow
+% If I just use the formulation for linear least squares I get RMSE ~ 0.5
+% which is basically the same as part 3a, as expected. 
+% num_params = 81;
+
+function F = fun(x, xdata)
+    F = zeros(size(xdata, 1), 1);
+    for i = 1:size(xdata, 1)
+        for j = 1:size(xdata(i,:), 2)
+            F(i, 1) = F(i, 1) + xdata(i,j)*x(j);
+        end
+    end
+end
+
+
+% Random function I came up with. RMS ~ 1
+% num_params = 5;
 
 function F = fun(x, xdata)
     F = zeros(size(xdata, 1), 1);
@@ -495,12 +514,13 @@ function F = fun(x, xdata)
 end
 
 
-% Terrible log fit, RMS ~ 1.5
+% Terrible log fit, RMS ~ 28
+% num_params = 81;
 
 function F = fun(x, xdata)
     F = zeros(size(xdata, 1), 1);
     for i = 1:size(xdata, 1)
-        for j = 1:size(xdata(i,:))
+        for j = 1:size(xdata(i,:), 2)
             F(i, 1) = F(i, 1) + log(abs(xdata(i,j)*x(j)));
         end
     end
@@ -508,12 +528,12 @@ end
 
 
 % Squaring isn't much better RMS ~ 1
-% Makes no difference if you sum the squares or square the sums
+% num_params = 81;
 
 function F = fun(x, xdata)
     F = zeros(size(xdata, 1), 1);
     for i = 1:size(xdata, 1)
-        for j = 1:size(xdata(i,:))
+        for j = 1:size(xdata(i,:), 2)
             F(i, 1) = F(i, 1) + (xdata(i,j)*x(j))^2;
         end
     end
