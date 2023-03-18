@@ -1,5 +1,10 @@
 clear; clc; close all;
 
+% This code is now partitioned into sections. To see results from part 
+% 3a, 3b, 3c, or 3d, simply run this initial section to setup the data
+% matrix and then run the corresponding part. This only needs to be done
+% once.
+
 %%Part 1
 
 % element_data is a breakdown of each superconductor into its chemical
@@ -9,6 +14,10 @@ element_data = readtable("unique_m.csv");
 % superconductor_data gives the feature values of the same superconductors
 % that are in element_data
 superconductor_data = readtable("train.csv");
+
+% For running Part 3
+X_matrix = superconductor_data{:,:};
+X_standardized = normalize(X_matrix);
 
 %{
 % The following section is just us looking at some basic plots and info 
@@ -80,6 +89,7 @@ scatter(log(means{:,:}), stds{:,:})
 
 %% Part 2
 
+% Remove these bracket comments to run part 2
 %{
 
 % Create an unlabeled matrix to perform standardization
@@ -125,8 +135,6 @@ heatmap(cor_matrix)
 
 % Create a normal linear regression model, using cross validation
 % Store error and model pareameters
-X_matrix = superconductor_data{:,:};
-X_standardized = normalize(X_matrix);
 X_no_target = X_standardized(:,1:81);
 target = X_standardized(:,82);
 
@@ -435,9 +443,9 @@ model_params = cell(folds,1);
 
 % Remember to set this!! # of parameters you want to use
 % Make sure to set the correct value or else it will complain (too small)
-num_params = 5;
+num_params = 3;
 
-% Warning: Takes very long time
+% Warning: Can take very long time
 for k = 1:folds
 
     % Set up training and testing set for each fold
@@ -448,17 +456,18 @@ for k = 1:folds
     X_test = X_no_target(testIdx,:);
     y_test = target(testIdx,:);
 
-    % Initial values for parameters, I just use ones for consistency
+    % Initial values for parameters, I just use ones for consistency,
+    % can change to rand*constant instead
     x0 = ones(1, num_params);
 
     % Optional options to use levenberg-marquardt taught in class
-    options = optimoptions('lsqcurvefit','Algorithm','levenberg-marquardt');
-    lb = [];
-    ub = [];
+    %options = optimoptions('lsqcurvefit','Algorithm','levenberg-marquardt');
+    %lb = [];
+    %ub = [];
 
     % Non-linear fitting algorithm
-    %parameters = lsqcurvefit(@fun, x0, X_train, y_train);
-    parameters = lsqcurvefit(@fun, x0, X_train, y_train, lb, ub, options);
+    parameters = lsqcurvefit(@fun, x0, X_train, y_train);
+    %parameters = lsqcurvefit(@fun, x0, X_train, y_train, lb, ub, options);
     
     % Predicted y value
     y_pred = fun(parameters, X_test);
@@ -478,64 +487,110 @@ disp(rms_error);
 % x is parameter vector, xdata(i) is feature vector for each data point i
 function F = fun(x, xdata)
     F = zeros(size(xdata, 1), 1);
-    for i = 1:size(xdata, 1)
-        F(i, 1) = norm(x(1).*exp(sin(x(2).*xdata(i,:)))./x(3).*xdata(i,:).^x(4))/x(5);
+    for i = 1:size(xdata, 1)       
+        for j = 1:size(xdata(i,:))
+            F(i, 1) = F(i, 1) + abs(log(x(1)*xdata(i,j))) * x(2)^xdata(i,j);
+        end
+        F(i, 1) = F(i, 1) + x(3);
     end
 end
-
 
 % A collection of non-linear functions I've tried for part 3d. Just
 % copy and paste in the one you want I guess
 
 %{
 
-% If I just use the formulation for linear least squares I get RMSE ~ 0.5
+% If I just use the formulation for linear least squares I get RMSE ~ 0.51
 % which is basically the same as part 3a, as expected. 
 % num_params = 81;
 
 function F = fun(x, xdata)
     F = zeros(size(xdata, 1), 1);
     for i = 1:size(xdata, 1)
-        for j = 1:size(xdata(i,:), 2)
-            F(i, 1) = F(i, 1) + xdata(i,j)*x(j);
-        end
+        F(i, 1) = xdata(i,:)*transpose(x);
     end
 end
 
+% Non-linear Modification models:
 
-% Random function I came up with. RMS ~ 1
-% num_params = 5;
-
-function F = fun(x, xdata)
-    F = zeros(size(xdata, 1), 1);
-    for i = 1:size(xdata, 1)
-        F(i, 1) = norm(x(1).*exp(sin(x(2).*xdata(i,:)))./x(3).*xdata(i,:).^x(4))/x(5);
-    end
-end
-
-
-% Terrible log fit, RMS ~ 28
+% Terrible log fit, RMSE ~ 1.4
 % num_params = 81;
 
 function F = fun(x, xdata)
     F = zeros(size(xdata, 1), 1);
     for i = 1:size(xdata, 1)
-        for j = 1:size(xdata(i,:), 2)
-            F(i, 1) = F(i, 1) + log(abs(xdata(i,j)*x(j)));
-        end
+        F(i, 1) = log(abs(xdata(i,:)*transpose(x)));
     end
 end
 
 
-% Squaring isn't much better RMS ~ 1
+% Squaring isn't much better RMSE ~ 0.85
 % num_params = 81;
 
 function F = fun(x, xdata)
     F = zeros(size(xdata, 1), 1);
     for i = 1:size(xdata, 1)
-        for j = 1:size(xdata(i,:), 2)
-            F(i, 1) = F(i, 1) + (xdata(i,j)*x(j))^2;
+        F(i, 1) = (xdata(i,:)*transpose(x))^2;
+    end
+end
+
+
+% Cubing does better but still not as good as regular linear
+% num_params = 81, RMSE ~ 0.55
+
+function F = fun(x, xdata)
+    F = zeros(size(xdata, 1), 1);
+    for i = 1:size(xdata, 1)
+        F(i, 1) = (xdata(i,:)*transpose(x))^3;
+    end
+end
+
+
+% 4th power gives RMSE ~ 12.7 and takes long time
+
+
+% Q function (tail area for standard gaussian), RMSE ~ 0.77
+% num_params = 81, Takes forever
+
+function F = fun(x, xdata)
+    F = zeros(size(xdata, 1), 1);
+    for i = 1:size(xdata, 1)
+        F(i, 1) = qfunc(xdata(i,:)*transpose(x));
+    end
+end
+
+% Inverse tangent, RMSE ~ 0.52
+% num_params - 81
+
+function F = fun(x, xdata)
+    F = zeros(size(xdata, 1), 1);
+    for i = 1:size(xdata, 1)
+        F(i, 1) = atan(xdata(i,:)*transpose(x));
+    end
+end
+
+
+Orignal non-linear models:
+
+% RMSE ~ 1, num_params = 5
+
+function F = fun(x, xdata)
+    F = zeros(size(xdata, 1), 1);
+    for i = 1:size(xdata, 1)
+        F(i, 1) = norm(x(1).*exp(sin(x(2).*xdata(i,:))).*xdata(i,:).^x(3)./x(4))/x(5);
+    end
+end
+
+
+% RMSE ~ 1.2, num_params = 3
+
+function F = fun(x, xdata)
+    F = zeros(size(xdata, 1), 1);
+    for i = 1:size(xdata, 1)       
+        for j = 1:size(xdata(i,:))
+            F(i, 1) = F(i, 1) + abs(log(x(1)*xdata(i,j))) * x(2)^xdata(i,j);
         end
+        F(i, 1) = F(i, 1) + x(3);
     end
 end
 
