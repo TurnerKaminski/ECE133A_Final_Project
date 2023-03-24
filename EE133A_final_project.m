@@ -523,8 +523,15 @@ row_stds_3b_params = std(result_3b{:,:}, 0, 2);
 %params for part 3c
 %just stored in coeffs and coeffs_rand
 %for each model respectively
-%Theres a row for each value of lamdba, could extract one for reporting
-%purposes?
+%lambda chosen for 3.c.1 was .1150 which corresponds to entry 16 so take
+%16th row
+%transpose for continuity
+coeffs_3c1 = coeffs(16,:);
+coeffs_3c1 = coeffs_3c1';
+}
+%Lambda chosen for 3.c.2 was also .1150
+coeffs_3c2 = coeffs_rand(16,:);
+coeffs_3c2 = coeffs_3c2';
 
 
 %parameters for part 3d.
