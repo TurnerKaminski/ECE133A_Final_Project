@@ -596,3 +596,43 @@ end
 
 %}
 
+%% part 4
+%part 4b
+%find the std and mean of each row for column 1 of each table for each fold
+%params for part 3a
+%take column 1 from each table corresponding to the parameter estimates
+%for each fold
+% rename the column in each table
+for i = 1:10
+    model_params{i}.Properties.VariableNames{'Estimate'} = sprintf('Estimate_%d', i);
+end
+% Extract the first column of each table using cellfun
+cols = cellfun(@(t) t(:, 1), model_params, 'UniformOutput', false);
+% Concatenate the columns into a single table
+result = cat(2, cols{:});
+result = result(2:82,:);
+% Compute the mean and standard deviation of each row
+row_means_3a_params = mean(result{:,:}, 2);
+row_stds_3a_params = std(result{:,:}, 0, 2);
+
+
+%params for part 3b
+%take column 1 from each table corresponding to the parameter estimates
+%for each fold
+% rename the column in each table
+for i = 1:10
+    model_params_new{i}.Properties.VariableNames{'Estimate'} = sprintf('Estimate_%d', i);
+end
+% Extract the first column of each table using cellfun
+cols = cellfun(@(t) t(:, 1), model_params_new, 'UniformOutput', false);
+% Concatenate the columns into a single table
+result_3b = cat(2, cols{:});
+result_3b = result_3b(2:126,:);
+% Compute the mean and standard deviation of each row
+row_means_3b_params = mean(result_3b{:,:}, 2);
+row_stds_3b_params = std(result_3b{:,:}, 0, 2);
+
+%params for part 3c
+%just stored in coeffs and coeffs_rand
+%for each model respectively
+
