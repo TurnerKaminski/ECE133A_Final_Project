@@ -635,5 +635,5 @@ row_stds_3b_params = std(result_3b{:,:}, 0, 2);
 %params for part 3c
 %just stored in coeffs and coeffs_rand
 %for each model respectively
-%Theres a column for each value of lamdba, could extract one for reporting
+%Theres a row for each value of lamdba, could extract one for reporting
 %purposes?
