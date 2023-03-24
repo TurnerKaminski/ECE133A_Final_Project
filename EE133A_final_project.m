@@ -357,7 +357,7 @@ title('Linear model fit on training and testing data');
 % So going to add randomly generated features to add regression power
 % As per Prof suggestion and lec 9 notes
 % Define the size of matrix B and vector v
-k = 1000; % The number of additional features you want to create
+k = 4000; % The number of additional features you want to create
 B = randn(126, k);  % A random matrix of size [m, k]
 v = randn(1, k);    % A random vector of size [1, k]
 
