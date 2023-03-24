@@ -476,7 +476,7 @@ for k = 1:folds
     rms_error(k) = sqrt(mean((y_test - y_pred).^2));
 
     % Store model parameters
-    model_params{k} = parameters;
+    model_params_nl{k} = parameters;
 
 end
 
@@ -635,4 +635,5 @@ row_stds_3b_params = std(result_3b{:,:}, 0, 2);
 %params for part 3c
 %just stored in coeffs and coeffs_rand
 %for each model respectively
-
+%Theres a column for each value of lamdba, could extract one for reporting
+%purposes?
