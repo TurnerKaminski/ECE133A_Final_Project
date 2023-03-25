@@ -441,9 +441,10 @@ cv = cvpartition(size(X_no_target,1), 'KFold', folds);
 rms_error = zeros(folds,1);
 model_params = cell(folds,1);
 
+iterations = zeros(folds, 1);
 % Remember to set this!! # of parameters you want to use
 % Make sure to set the correct value or else it will complain (too small)
-num_params = 3;
+num_params = 81;
 
 % Warning: Can take very long time
 for k = 1:folds
@@ -466,7 +467,7 @@ for k = 1:folds
     %ub = [];
 
     % Non-linear fitting algorithm
-    parameters = lsqcurvefit(@fun, x0, X_train, y_train);
+    [parameters, resnorm, residual, exitflag, output] = lsqcurvefit(@fun, x0, X_train, y_train);
     %parameters = lsqcurvefit(@fun, x0, X_train, y_train, lb, ub, options);
     
     % Predicted y value
@@ -478,10 +479,12 @@ for k = 1:folds
     % Store model parameters
     model_params_nl{k} = parameters;
 
+    % Store iterations taken
+    iterations(k) = output.iterations;
+
 end
 
-disp(rms_error);
-
+disp(sum(iterations));
 
 
 %% part 4
@@ -528,7 +531,7 @@ row_stds_3b_params = std(result_3b{:,:}, 0, 2);
 %transpose for continuity
 coeffs_3c1 = coeffs(16,:);
 coeffs_3c1 = coeffs_3c1';
-}
+
 %Lambda chosen for 3.c.2 was also .1150
 coeffs_3c2 = coeffs_rand(16,:);
 coeffs_3c2 = coeffs_3c2';
@@ -555,11 +558,8 @@ row_stds_3d_params = std(result_3d(:,:), 0, 2);
 % x is parameter vector, xdata(i) is feature vector for each data point i
 function F = fun(x, xdata)
     F = zeros(size(xdata, 1), 1);
-    for i = 1:size(xdata, 1)       
-        for j = 1:size(xdata(i,:))
-            F(i, 1) = F(i, 1) + abs(log(x(1)*xdata(i,j))) * x(2)^xdata(i,j);
-        end
-        F(i, 1) = F(i, 1) + x(3);
+    for i = 1:size(xdata, 1)
+        F(i, 1) = atan(xdata(i,:)*transpose(x));
     end
 end
 
