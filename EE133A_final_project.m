@@ -357,7 +357,7 @@ title('Linear model fit on training and testing data');
 % So going to add randomly generated features to add regression power
 % As per Prof suggestion and lec 9 notes
 % Define the size of matrix B and vector v
-k = 1000; % The number of additional features you want to create
+k = 4000; % The number of additional features you want to create
 B = randn(126, k);  % A random matrix of size [m, k]
 v = randn(1, k);    % A random vector of size [1, k]
 
@@ -505,6 +505,7 @@ result = result(2:82,:);
 % Compute the mean and standard deviation of each row
 row_means_3a_params = mean(result{:,:}, 2);
 row_stds_3a_params = std(result{:,:}, 0, 2);
+params_3a_percent = row_stds_3a_params ./ row_means_3a_params * 100;
 
 
 %params for part 3b
@@ -522,6 +523,8 @@ result_3b = result_3b(2:126,:);
 % Compute the mean and standard deviation of each row
 row_means_3b_params = mean(result_3b{:,:}, 2);
 row_stds_3b_params = std(result_3b{:,:}, 0, 2);
+params_3b_percent = row_stds_3b_params ./ row_means_3b_params * 100;
+
 
 %params for part 3c
 %just stored in coeffs and coeffs_rand
@@ -547,7 +550,7 @@ result_3d = result_3d(2:end,:);
 % Compute the mean and standard deviation of each row
 row_means_3d_params = mean(result_3d(:,:), 2);
 row_stds_3d_params = std(result_3d(:,:), 0, 2);
-
+params_3d_percent = row_stds_3d_params ./ row_means_3d_params * 100;
 
 
 %Moved function definitions to the end of script for functionality
